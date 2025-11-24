@@ -8,6 +8,7 @@ export default function MusicPlayer() {
   const [currentLyric, setCurrentLyric] = useState('')
   const playerRef = useRef(null)
   const lyricsIntervalRef = useRef(null)
+  const lyricsVisibleRef = useRef(true) // 使用 ref 来同步状态
 
   const PLAYLIST_ID = '14148542684'
 
@@ -34,7 +35,9 @@ export default function MusicPlayer() {
     // 加载保存的设置
     const savedLyricsVisible = localStorage.getItem('lyricsVisible')
     if (savedLyricsVisible !== null) {
-      setLyricsVisible(savedLyricsVisible === 'true')
+      const visible = savedLyricsVisible === 'true'
+      setLyricsVisible(visible)
+      lyricsVisibleRef.current = visible
     }
 
     return () => {
@@ -113,7 +116,7 @@ export default function MusicPlayer() {
     })
   }
 
-  // 歌词功能
+  // 歌词功能 - 修复版本
   const showLyricsWithEffect = (currentText, nextText) => {
     if (currentText === currentLyric) return
     setCurrentLyric(currentText)
@@ -123,6 +126,12 @@ export default function MusicPlayer() {
     if (!currentLineEl || !nextLineEl) return
 
     currentLineEl.innerHTML = ''
+
+    // 检查歌词是否应该显示
+    if (!lyricsVisibleRef.current) {
+      hideLyrics()
+      return
+    }
 
     if (currentText && currentText.trim()) {
       const typingSpan = document.createElement('span')
@@ -142,7 +151,7 @@ export default function MusicPlayer() {
       nextLineEl.textContent = nextText || ''
       
       // 只有在歌词可见时才显示
-      if (lyricsVisible) {
+      if (lyricsVisibleRef.current) {
         document.getElementById('floating-lyrics').classList.add('show')
       }
     } else {
@@ -151,8 +160,10 @@ export default function MusicPlayer() {
   }
 
   const startLyricsUpdate = () => {
-    if (!lyricsVisible) {
+    // 直接使用 ref 检查状态
+    if (!lyricsVisibleRef.current) {
       console.log('歌词已隐藏，跳过更新')
+      hideLyrics()
       return
     }
 
@@ -166,8 +177,9 @@ export default function MusicPlayer() {
   }
 
   const updateLyricsFromDOM = () => {
-    // 如果歌词不可见，直接返回
-    if (!lyricsVisible) {
+    // 使用 ref 检查状态，确保实时性
+    if (!lyricsVisibleRef.current) {
+      hideLyrics()
       return
     }
 
@@ -213,8 +225,11 @@ export default function MusicPlayer() {
 
   // 修复的歌词显示/隐藏控制函数
   const toggleLyricsVisibility = () => {
-    const newLyricsVisible = !lyricsVisible
+    const newLyricsVisible = !lyricsVisibleRef.current
+    
+    // 同时更新 state 和 ref
     setLyricsVisible(newLyricsVisible)
+    lyricsVisibleRef.current = newLyricsVisible
     
     console.log('切换歌词显示状态:', newLyricsVisible)
 
@@ -235,6 +250,12 @@ export default function MusicPlayer() {
         if (currentLineEl) currentLineEl.textContent = ''
         if (nextLineEl) nextLineEl.textContent = ''
         setCurrentLyric('')
+        
+        // 停止歌词更新
+        if (lyricsIntervalRef.current) {
+          clearInterval(lyricsIntervalRef.current)
+          lyricsIntervalRef.current = null
+        }
       }
     }
 
@@ -259,7 +280,7 @@ export default function MusicPlayer() {
     if (!rightMenu) return
 
     // 更新歌词菜单文本状态
-    updateLyricsMenuText(lyricsVisible)
+    updateLyricsMenuText(lyricsVisibleRef.current)
 
     rightMenu.style.display = 'block'
     rightMenu.classList.remove('show')
@@ -404,7 +425,7 @@ export default function MusicPlayer() {
         <div id="aplayer-container"></div>
       </div>
 
-      {/* 右键菜单 - 修复样式 */}
+      {/* 右键菜单 */}
       <ul id="right-menu" role="menu" aria-hidden="true">
         <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
         <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
@@ -441,7 +462,35 @@ export default function MusicPlayer() {
           to { opacity: 1; transform: scale(1) }
         }
 
-        /* ===== 独立歌词显示 ===== */
+        /* APlayer 微调样式 - 自定义播放器外观 */
+        :global(.aplayer) { 
+          border-radius: 12px !important; 
+          overflow: hidden !important; 
+        }
+
+        /* 顶部歌曲名改为黑色 */
+        :global(.aplayer .aplayer-info .aplayer-music .aplayer-title) {
+          color: #000 !important;
+          font-weight: bold !important;
+        }
+
+        /* 播放列表歌名改为黑色 */
+        :global(.aplayer .aplayer-list ol li) {
+          color: #000 !important;
+        }
+
+        /* 歌词颜色设置 */
+        :global(.aplayer .aplayer-lrc p) {
+          color: #ff8c00 !important;
+        }
+
+        :global(.aplayer .aplayer-lrc p.aplayer-lrc-current) {
+          color: #ff4500 !important;
+          font-weight: bold !important;
+          font-size: 16px !important;
+        }
+
+        /* ===== 独立歌词显示 - 新增逐步推进效果 ===== */
         #floating-lyrics {
           position: fixed;
           left: 100px;
@@ -466,6 +515,7 @@ export default function MusicPlayer() {
           opacity: 1;
         }
 
+        /* 当前歌词行样式 */
         #floating-lyrics .current-line {
           color: #ff4500;
           font-size: 30px;
@@ -476,6 +526,7 @@ export default function MusicPlayer() {
           position: relative;
         }
 
+        /* 下一句歌词样式 */
         #floating-lyrics .next-line {
           color: #ff8c00;
           font-size: 14px;
@@ -483,6 +534,7 @@ export default function MusicPlayer() {
           min-height: 18px;
         }
 
+        /* 逐字推进效果 */
         #floating-lyrics .current-line .typing-text {
           display: inline-block;
           overflow: hidden;
@@ -492,6 +544,7 @@ export default function MusicPlayer() {
           animation-fill-mode: both;
         }
 
+        /* 打字机效果动画 */
         @keyframes typing {
           from { width: 0 }
           to { width: 100% }
@@ -502,35 +555,45 @@ export default function MusicPlayer() {
           50% { border-color: #ff4500 }
         }
 
-        /* ===== 音乐胶囊 ===== */
-        #music-capsule {
-          position: fixed;
-          left: 22px;
-          bottom: 96px;
-          width: 72px;
-          height: 72px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 30000;
-          background: radial-gradient(circle at 30% 30%, #00c3ff, #0061ff);
-          box-shadow: 0 8px 28px rgba(0, 180, 255, 0.12);
+        /* 淡入效果 */
+        :global(.fade-in-text) {
+          animation: fadeIn 0.8s ease-in-out;
         }
 
-        #music-capsule.playing {
-          background: radial-gradient(circle at 30% 30%, #ff9500, #ff5e00);
-          box-shadow: 0 8px 28px rgba(255, 140, 0, 0.28);
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        #music-capsule.playing img {
-          animation: spin 6s linear infinite;
+        /* ===== 音乐胶囊（固定左下） ===== */
+        #music-capsule{
+          position:fixed;
+          left:22px;
+          bottom:96px;
+          width:72px;
+          height:72px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          z-index:30000;
+          background:radial-gradient(circle at 30% 30%, #00c3ff,#0061ff);
+          box-shadow:0 8px 28px rgba(0,180,255,0.12)
         }
 
-        @keyframes spin {
-          from { transform: rotate(0) }
-          to { transform: rotate(360deg) }
+        #music-capsule.playing{
+          background:radial-gradient(circle at 30% 30%, #ff9500,#ff5e00);
+          box-shadow:0 8px 28px rgba(255,140,0,0.28)
+        }
+
+        #music-capsule.playing img{
+          animation:spin 6s linear infinite
+        }
+
+        @keyframes spin{
+          from{transform:rotate(0)}
+          to{transform:rotate(360deg)}
         }
 
         #music-capsule img {
@@ -540,81 +603,57 @@ export default function MusicPlayer() {
           object-fit: cover;
         }
 
-        /* ===== 右键菜单 - 修复样式 ===== */
-        #right-menu {
-          position: fixed;
-          display: none;
-          z-index: 40000;
-          min-width: 220px;
-          background: rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          color: #ff8c00; /* 橙色字体 */
-          border-radius: 10px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-          padding: 6px 0;
-          opacity: 0;
-          transform: scale(.98);
-          transition: opacity .12s, transform .12s;
+        /* ===== 右键菜单（毛玻璃半透明） ===== */
+        #right-menu{
+          position:fixed;
+          display:none;
+          z-index:40000;
+          min-width:220px;
+          background:rgba(255,255,255,0.12);
+          backdrop-filter:blur(10px);
+          -webkit-backdrop-filter:blur(10px);
+          color:#ff8c00;
+          border-radius:10px;
+          box-shadow:0 10px 30px rgba(0,0,0,0.35);
+          padding:6px 0;
+          opacity:0;
+          transform:scale(.98);
+          transition:opacity .12s,transform .12s
         }
 
-        #right-menu.show {
-          display: flex;
-          opacity: 1;
-          transform: scale(1);
-          flex-direction: column;
+        #right-menu.show{
+          display:flex;
+          opacity:1;
+          transform:scale(1);
+          flex-direction:column
         }
 
-        #right-menu li {
-          list-style: none;
-          padding: 10px 16px;
-          cursor: pointer;
-          white-space: nowrap;
-          font-weight: 700;
-          transition: background .12s, color .12s;
-          color: #ff8c00; /* 橙色字体 */
+        #right-menu li{
+          list-style:none;
+          padding:10px 16px;
+          cursor:pointer;
+          white-space:nowrap;
+          font-weight:700;
+          transition:background .12s, color .12s;
+          color:#ff8c00;
         }
 
-        #right-menu li:hover {
-          background: #1e90ff; /* 蓝色背景 */
-          color: white !important; /* 白色字体 */
-          border-radius: 6px;
+        #right-menu li:hover{
+          background:#1e90ff;
+          color:white !important;
+          border-radius:6px
         }
 
-        #right-menu::after {
-          content: "";
-          position: absolute;
-          top: -8px;
-          left: var(--arrow-left, 24px);
-          transform: translateX(-50%);
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-bottom: 8px solid rgba(255, 255, 255, 0.12);
-        }
-
-        /* APlayer 自定义样式 */
-        :global(.aplayer) {
-          border-radius: 12px !important;
-          overflow: hidden !important;
-        }
-
-        :global(.aplayer .aplayer-info .aplayer-music .aplayer-title) {
-          color: #000 !important;
-          font-weight: bold !important;
-        }
-
-        :global(.aplayer .aplayer-list ol li) {
-          color: #000 !important;
-        }
-
-        :global(.aplayer .aplayer-lrc p) {
-          color: #ff8c00 !important;
-        }
-
-        :global(.aplayer .aplayer-lrc p.aplayer-lrc-current) {
-          color: #ff4500 !important;
-          font-weight: bold !important;
-          font-size: 16px !important;
+        /* 右键菜单箭头 */
+        #right-menu::after{
+          content:"";
+          position:absolute;
+          top:-8px;
+          left:var(--arrow-left,24px);
+          transform:translateX(-50%);
+          border-left:8px solid transparent;
+          border-right:8px solid transparent;
+          border-bottom:8px solid rgba(255,255,255,0.12)
         }
 
         /* 响应式设计 */

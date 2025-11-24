@@ -372,7 +372,7 @@ export default function MusicPlayer() {
         toggleLyricsVisibility()
         break
       case 'support':
-        window.open('https://1356666.xyz', '_blank')
+        window.open('https://fly.hangdn.com', '_blank')
         break
       case 'fullscreen':
         if (!document.fullscreenElement) {

@@ -8,7 +8,7 @@ export default function MusicPlayer() {
   const [currentLyric, setCurrentLyric] = useState('')
   const playerRef = useRef(null)
   const lyricsIntervalRef = useRef(null)
-  const lyricsVisibleRef = useRef(true) // 使用 ref 来同步状态
+  const lyricsVisibleRef = useRef(true)
 
   const PLAYLIST_ID = '14148542684'
 
@@ -310,6 +310,27 @@ export default function MusicPlayer() {
     }
   }
 
+  // 导航功能
+  const navigateBack = () => {
+    window.history.back()
+  }
+
+  const navigateForward = () => {
+    window.history.forward()
+  }
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const refreshPage = () => {
+    window.location.reload()
+  }
+
+  const goToHome = () => {
+    window.location.href = '/'
+  }
+
   // 事件处理函数
   const handleCapsuleClick = () => {
     setIsPlayerVisible(true)
@@ -369,6 +390,21 @@ export default function MusicPlayer() {
         if (capsule) capsule.style.display = 'flex'
         if (playerWrap) playerWrap.classList.remove('show')
         break
+      case 'back':
+        navigateBack()
+        break
+      case 'forward':
+        navigateForward()
+        break
+      case 'top':
+        scrollToTop()
+        break
+      case 'refresh':
+        refreshPage()
+        break
+      case 'home':
+        goToHome()
+        break
     }
     hideRightMenuImmediate()
   }
@@ -427,6 +463,26 @@ export default function MusicPlayer() {
 
       {/* 右键菜单 */}
       <ul id="right-menu" role="menu" aria-hidden="true">
+        {/* 导航按钮行 */}
+        <div className="nav-buttons">
+          <li className="nav-btn" onClick={() => handleMenuAction('back')} title="后退">
+            ←
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('forward')} title="前进">
+            →
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('top')} title="回到顶部">
+            ↑
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('refresh')} title="刷新">
+            ↻
+          </li>
+        </div>
+        
+        {/* 分隔线 */}
+        <div className="menu-divider"></div>
+
+        {/* 音乐控制 */}
         <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
         <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
         <li onClick={() => handleMenuAction('next')}>⏭ 下一首</li>
@@ -435,6 +491,12 @@ export default function MusicPlayer() {
         <li id="menu-lyrics" onClick={() => handleMenuAction('lyrics')}>
           {lyricsVisible ? '📜 隐藏歌词' : '📜 显示歌词'}
         </li>
+        
+        {/* 分隔线 */}
+        <div className="menu-divider"></div>
+
+        {/* 其他功能 */}
+        <li onClick={() => handleMenuAction('home')}>🏠 回首页</li>
         <li onClick={() => handleMenuAction('support')}>💡 技术支持</li>
         <li onClick={() => handleMenuAction('fullscreen')}>🖥️ 全屏模式</li>
         <li onClick={() => handleMenuAction('close')}>❌ 关闭播放器</li>
@@ -644,6 +706,40 @@ export default function MusicPlayer() {
           border-radius:6px
         }
 
+        /* 导航按钮行样式 */
+        .nav-buttons {
+          display: flex;
+          justify-content: space-between;
+          padding: 0 8px;
+          margin-bottom: 4px;
+        }
+
+        .nav-btn {
+          flex: 1;
+          text-align: center;
+          padding: 8px 4px !important;
+          margin: 0 2px !important;
+          background: rgba(30, 144, 255, 0.3);
+          border-radius: 6px;
+          font-size: 16px;
+          font-weight: bold;
+          transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+          background: #1e90ff !important;
+          color: white !important;
+          transform: scale(1.05);
+        }
+
+        /* 分隔线样式 */
+        .menu-divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.2);
+          margin: 4px 12px;
+          border-radius: 1px;
+        }
+
         /* 右键菜单箭头 */
         #right-menu::after{
           content:"";
@@ -681,6 +777,21 @@ export default function MusicPlayer() {
           #music-capsule img {
             width: 50px;
             height: 50px;
+          }
+
+          /* 移动端右键菜单调整 */
+          #right-menu {
+            min-width: 200px;
+          }
+
+          .nav-buttons {
+            padding: 0 6px;
+          }
+
+          .nav-btn {
+            padding: 6px 3px !important;
+            margin: 0 1px !important;
+            font-size: 14px;
           }
         }
       `}</style>

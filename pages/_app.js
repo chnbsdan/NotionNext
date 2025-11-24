@@ -24,8 +24,8 @@ const ClerkProvider = dynamic(() =>
   import('@clerk/nextjs').then(m => m.ClerkProvider)
 )
 
-// 导入音乐播放器 - 尝试不同的路径
-import MusicPlayer from '@/components/MusicPlayer'
+// 导入音乐播放器 - 使用正确的主题组件路径
+import MusicPlayer from '../themes/heo/components/MusicPlayer'
 
 /**
  * App挂载DOM 入口文件

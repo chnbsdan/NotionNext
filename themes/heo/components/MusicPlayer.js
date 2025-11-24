@@ -140,14 +140,21 @@ export default function MusicPlayer() {
       }
 
       nextLineEl.textContent = nextText || ''
-      document.getElementById('floating-lyrics').classList.add('show')
+      
+      // 只有在歌词可见时才显示
+      if (lyricsVisible) {
+        document.getElementById('floating-lyrics').classList.add('show')
+      }
     } else {
       hideLyrics()
     }
   }
 
   const startLyricsUpdate = () => {
-    if (!lyricsVisible) return
+    if (!lyricsVisible) {
+      console.log('歌词已隐藏，跳过更新')
+      return
+    }
 
     if (lyricsIntervalRef.current) {
       clearInterval(lyricsIntervalRef.current)
@@ -159,7 +166,10 @@ export default function MusicPlayer() {
   }
 
   const updateLyricsFromDOM = () => {
-    if (!lyricsVisible) return
+    // 如果歌词不可见，直接返回
+    if (!lyricsVisible) {
+      return
+    }
 
     try {
       const lrcContainer = document.querySelector('.aplayer-lrc')
@@ -201,20 +211,45 @@ export default function MusicPlayer() {
     }
   }
 
+  // 修复的歌词显示/隐藏控制函数
   const toggleLyricsVisibility = () => {
     const newLyricsVisible = !lyricsVisible
     setLyricsVisible(newLyricsVisible)
-    localStorage.setItem('lyricsVisible', newLyricsVisible.toString())
+    
+    console.log('切换歌词显示状态:', newLyricsVisible)
 
-    if (!newLyricsVisible) {
-      hideLyrics()
-      const currentLineEl = document.querySelector('#floating-lyrics .current-line')
-      const nextLineEl = document.querySelector('#floating-lyrics .next-line')
-      if (currentLineEl) currentLineEl.textContent = ''
-      if (nextLineEl) nextLineEl.textContent = ''
-      setCurrentLyric('')
-    } else if (isPlaying) {
-      startLyricsUpdate()
+    // 立即更新歌词显示状态
+    const floatingLyrics = document.getElementById('floating-lyrics')
+    if (floatingLyrics) {
+      if (newLyricsVisible) {
+        floatingLyrics.classList.add('show')
+        // 如果正在播放，重新开始歌词更新
+        if (playerRef.current && !playerRef.current.audio.paused) {
+          startLyricsUpdate()
+        }
+      } else {
+        floatingLyrics.classList.remove('show')
+        // 清除歌词内容
+        const currentLineEl = document.querySelector('#floating-lyrics .current-line')
+        const nextLineEl = document.querySelector('#floating-lyrics .next-line')
+        if (currentLineEl) currentLineEl.textContent = ''
+        if (nextLineEl) nextLineEl.textContent = ''
+        setCurrentLyric('')
+      }
+    }
+
+    // 更新菜单文本
+    updateLyricsMenuText(newLyricsVisible)
+    
+    // 保存状态到本地存储
+    localStorage.setItem('lyricsVisible', newLyricsVisible.toString())
+  }
+
+  // 更新歌词菜单文本
+  const updateLyricsMenuText = (isVisible) => {
+    const lyricsMenuItem = document.getElementById('menu-lyrics')
+    if (lyricsMenuItem) {
+      lyricsMenuItem.textContent = isVisible ? '📜 隐藏歌词' : '📜 显示歌词'
     }
   }
 
@@ -222,6 +257,9 @@ export default function MusicPlayer() {
   const showRightMenuAt = (clientX, clientY) => {
     const rightMenu = document.getElementById('right-menu')
     if (!rightMenu) return
+
+    // 更新歌词菜单文本状态
+    updateLyricsMenuText(lyricsVisible)
 
     rightMenu.style.display = 'block'
     rightMenu.classList.remove('show')
@@ -266,7 +304,6 @@ export default function MusicPlayer() {
   }
 
   const handleMenuAction = (action) => {
-    hideRightMenuImmediate()
     switch(action) {
       case 'play':
         if (playerRef.current) playerRef.current.toggle()
@@ -312,6 +349,7 @@ export default function MusicPlayer() {
         if (playerWrap) playerWrap.classList.remove('show')
         break
     }
+    hideRightMenuImmediate()
   }
 
   // 添加全局事件监听
@@ -333,6 +371,11 @@ export default function MusicPlayer() {
       document.removeEventListener('touchstart', handleClickOutside)
     }
   }, [])
+
+  // 初始化时更新歌词菜单文本
+  useEffect(() => {
+    updateLyricsMenuText(lyricsVisible)
+  }, [lyricsVisible])
 
   return (
     <>
@@ -361,14 +404,14 @@ export default function MusicPlayer() {
         <div id="aplayer-container"></div>
       </div>
 
-      {/* 右键菜单 */}
+      {/* 右键菜单 - 修复样式 */}
       <ul id="right-menu" role="menu" aria-hidden="true">
         <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
         <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
         <li onClick={() => handleMenuAction('next')}>⏭ 下一首</li>
         <li onClick={() => handleMenuAction('volup')}>🔊 音量 +</li>
         <li onClick={() => handleMenuAction('voldown')}>🔉 音量 -</li>
-        <li onClick={() => handleMenuAction('lyrics')}>
+        <li id="menu-lyrics" onClick={() => handleMenuAction('lyrics')}>
           {lyricsVisible ? '📜 隐藏歌词' : '📜 显示歌词'}
         </li>
         <li onClick={() => handleMenuAction('support')}>💡 技术支持</li>
@@ -377,7 +420,6 @@ export default function MusicPlayer() {
       </ul>
 
       <style jsx>{`
-        /* 这里放置所有的CSS样式 */
         /* ===== 播放器面板（点击胶囊展开） ===== */
         #player-wrap {
           position: fixed;
@@ -498,7 +540,7 @@ export default function MusicPlayer() {
           object-fit: cover;
         }
 
-        /* ===== 右键菜单 ===== */
+        /* ===== 右键菜单 - 修复样式 ===== */
         #right-menu {
           position: fixed;
           display: none;
@@ -507,7 +549,7 @@ export default function MusicPlayer() {
           background: rgba(255, 255, 255, 0.12);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          color: #fff;
+          color: #ff8c00; /* 橙色字体 */
           border-radius: 10px;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
           padding: 6px 0;
@@ -529,12 +571,13 @@ export default function MusicPlayer() {
           cursor: pointer;
           white-space: nowrap;
           font-weight: 700;
-          transition: background .12s;
+          transition: background .12s, color .12s;
+          color: #ff8c00; /* 橙色字体 */
         }
 
         #right-menu li:hover {
-          background: rgba(255, 255, 255, 0.14);
-          color: #000;
+          background: #1e90ff; /* 蓝色背景 */
+          color: white !important; /* 白色字体 */
           border-radius: 6px;
         }
 

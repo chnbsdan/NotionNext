@@ -18,12 +18,12 @@ const CONFIG = {
   HEO_HERO_BODY_REVERSE: false,
 
   // 英雄区(首页顶部大卡)
-  HEO_HERO_TITLE_1: '分享编程',
-  HEO_HERO_TITLE_2: '与思维认知',
-  HEO_HERO_TITLE_3: 'TANGLY1024.COM',
-  HEO_HERO_TITLE_4: '新版上线',
-  HEO_HERO_TITLE_5: 'NotionNext4.0 轻松定制主题',
-  HEO_HERO_TITLE_LINK: 'https://no.hangdn.com',
+  HEO_HERO_TITLE_1: '项目分享',
+  HEO_HERO_TITLE_2: '与编程学习',
+  HEO_HERO_TITLE_3: 'fly.hangdn.com',
+  HEO_HERO_TITLE_4: '真情回馈',
+  HEO_HERO_TITLE_5: 'Youtube频道',
+  HEO_HERO_TITLE_LINK: 'https://www.youtube.com/@kekelove1688',
   // 英雄区遮罩文字
   HEO_HERO_COVER_TITLE: '随便逛逛',
 
@@ -120,7 +120,7 @@ const CONFIG = {
   HEO_SOCIAL_CARD_TITLE_1: '交流频道',
   HEO_SOCIAL_CARD_TITLE_2: '加入我们的社群讨论分享',
   HEO_SOCIAL_CARD_TITLE_3: '点击加入社群',
-  HEO_SOCIAL_CARD_URL: '#',
+  HEO_SOCIAL_CARD_URL: 'https://t.me/@ben_mesa',
 
   // 底部统计面板文案
   HEO_POST_COUNT_TITLE: '文章数:',

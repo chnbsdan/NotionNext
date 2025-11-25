@@ -6,11 +6,9 @@ export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [lyricsVisible, setLyricsVisible] = useState(true)
   const [currentLyric, setCurrentLyric] = useState('')
-  const [isOriginalMenu, setIsOriginalMenu] = useState(false)
   const playerRef = useRef(null)
   const lyricsIntervalRef = useRef(null)
   const lyricsVisibleRef = useRef(true)
-  const isCtrlPressedRef = useRef(false)
 
   const PLAYLIST_ID = '14148542684'
 
@@ -277,13 +275,9 @@ export default function MusicPlayer() {
   }
 
   // 右键菜单功能
-  const showRightMenuAt = (clientX, clientY, isCtrl = false) => {
+  const showRightMenuAt = (clientX, clientY) => {
     const rightMenu = document.getElementById('right-menu')
     if (!rightMenu) return
-
-    // 根据 Ctrl 键状态决定显示哪种菜单
-    const showOriginalMenu = isCtrl || isOriginalMenu
-    setIsOriginalMenu(showOriginalMenu)
 
     // 更新歌词菜单文本状态
     updateLyricsMenuText(lyricsVisibleRef.current)
@@ -347,21 +341,14 @@ export default function MusicPlayer() {
   }
 
   const handleContextMenu = (e) => {
+    // 如果按下了 Ctrl 键，不阻止默认行为，显示浏览器原生菜单
+    if (e.ctrlKey || e.metaKey) {
+      return // 不阻止默认行为，让浏览器显示原生右键菜单
+    }
+    
+    // 正常右键显示自定义菜单
     e.preventDefault()
-    const isCtrl = e.ctrlKey || e.metaKey
-    showRightMenuAt(e.clientX, e.clientY, isCtrl)
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Control' || e.key === 'Meta') {
-      isCtrlPressedRef.current = true
-    }
-  }
-
-  const handleKeyUp = (e) => {
-    if (e.key === 'Control' || e.key === 'Meta') {
-      isCtrlPressedRef.current = false
-    }
+    showRightMenuAt(e.clientX, e.clientY)
   }
 
   const handleMenuAction = (action) => {
@@ -440,15 +427,11 @@ export default function MusicPlayer() {
     document.addEventListener('contextmenu', handleContextMenu)
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('touchstart', handleClickOutside)
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('keyup', handleKeyUp)
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu)
       document.removeEventListener('click', handleClickOutside)
       document.removeEventListener('touchstart', handleClickOutside)
-      document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('keyup', handleKeyUp)
     }
   }, [])
 
@@ -456,66 +439,6 @@ export default function MusicPlayer() {
   useEffect(() => {
     updateLyricsMenuText(lyricsVisible)
   }, [lyricsVisible])
-
-  // 原始菜单内容
-  const OriginalMenu = () => (
-    <>
-      <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
-      <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
-      <li onClick={() => handleMenuAction('next')}>⏭ 下一首</li>
-      <li onClick={() => handleMenuAction('volup')}>🔊 音量 +</li>
-      <li onClick={() => handleMenuAction('voldown')}>🔉 音量 -</li>
-      <li id="menu-lyrics" onClick={() => handleMenuAction('lyrics')}>
-        {lyricsVisible ? '📜 隐藏歌词' : '📜 显示歌词'}
-      </li>
-      <li onClick={() => handleMenuAction('support')}>💡 技术支持</li>
-      <li onClick={() => handleMenuAction('fullscreen')}>🖥️ 全屏模式</li>
-      <li onClick={() => handleMenuAction('close')}>❌ 关闭播放器</li>
-    </>
-  )
-
-  // 增强菜单内容
-  const EnhancedMenu = () => (
-    <>
-      {/* 导航按钮行 */}
-      <div className="nav-buttons">
-        <li className="nav-btn" onClick={() => handleMenuAction('back')} title="后退">
-          ←
-        </li>
-        <li className="nav-btn" onClick={() => handleMenuAction('forward')} title="前进">
-          →
-        </li>
-        <li className="nav-btn" onClick={() => handleMenuAction('top')} title="回到顶部">
-          ↑
-        </li>
-        <li className="nav-btn" onClick={() => handleMenuAction('refresh')} title="刷新">
-          ↻
-        </li>
-      </div>
-      
-      {/* 分隔线 */}
-      <div className="menu-divider"></div>
-
-      {/* 音乐控制 */}
-      <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
-      <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
-      <li onClick={() => handleMenuAction('next')}>⏭ 下一首</li>
-      <li onClick={() => handleMenuAction('volup')}>🔊 音量 +</li>
-      <li onClick={() => handleMenuAction('voldown')}>🔉 音量 -</li>
-      <li id="menu-lyrics" onClick={() => handleMenuAction('lyrics')}>
-        {lyricsVisible ? '📜 隐藏歌词' : '📜 显示歌词'}
-      </li>
-      
-      {/* 分隔线 */}
-      <div className="menu-divider"></div>
-
-      {/* 其他功能 */}
-      <li onClick={() => handleMenuAction('home')}>🏠 回首页</li>
-      <li onClick={() => handleMenuAction('support')}>💡 技术支持</li>
-      <li onClick={() => handleMenuAction('fullscreen')}>🖥️ 全屏模式</li>
-      <li onClick={() => handleMenuAction('close')}>❌ 关闭播放器</li>
-    </>
-  )
 
   return (
     <>
@@ -546,14 +469,43 @@ export default function MusicPlayer() {
 
       {/* 右键菜单 */}
       <ul id="right-menu" role="menu" aria-hidden="true">
-        {/* 菜单提示 */}
-        <div className="menu-hint">
-          {isOriginalMenu ? '🔧 原始菜单 (Ctrl+右键)' : '🚀 增强菜单 (Ctrl+右键切换)'}
+        {/* 导航按钮行 */}
+        <div className="nav-buttons">
+          <li className="nav-btn" onClick={() => handleMenuAction('back')} title="后退">
+            ←
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('forward')} title="前进">
+            →
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('top')} title="回到顶部">
+            ↑
+          </li>
+          <li className="nav-btn" onClick={() => handleMenuAction('refresh')} title="刷新">
+            ↻
+          </li>
         </div>
-        <div className="menu-divider"></div>
         
-        {/* 根据状态显示不同菜单 */}
-        {isOriginalMenu ? <OriginalMenu /> : <EnhancedMenu />}
+        {/* 分隔线 */}
+        <div className="menu-divider"></div>
+
+        {/* 音乐控制 */}
+        <li onClick={() => handleMenuAction('play')}>▶ 播放 / 暂停</li>
+        <li onClick={() => handleMenuAction('prev')}>⏮ 上一首</li>
+        <li onClick={() => handleMenuAction('next')}>⏭ 下一首</li>
+        <li onClick={() => handleMenuAction('volup')}>🔊 音量 +</li>
+        <li onClick={() => handleMenuAction('voldown')}>🔉 音量 -</li>
+        <li id="menu-lyrics" onClick={() => handleMenuAction('lyrics')}>
+          {lyricsVisible ? '📜 隐藏歌词' : '📜 显示歌词'}
+        </li>
+        
+        {/* 分隔线 */}
+        <div className="menu-divider"></div>
+
+        {/* 其他功能 */}
+        <li onClick={() => handleMenuAction('home')}>🏠 回首页</li>
+        <li onClick={() => handleMenuAction('support')}>💡 技术支持</li>
+        <li onClick={() => handleMenuAction('fullscreen')}>🖥️ 全屏模式</li>
+        <li onClick={() => handleMenuAction('close')}>❌ 关闭播放器</li>
       </ul>
 
       <style jsx>{`
@@ -734,7 +686,8 @@ export default function MusicPlayer() {
           padding:6px 0;
           opacity:0;
           transform:scale(.98);
-          transition:opacity .12s,transform .12s
+          transition:opacity .12s,transform .12s;
+          border: 2px solid #ff8c00; /* 橙色边框 */
         }
 
         #right-menu.show{
@@ -758,18 +711,6 @@ export default function MusicPlayer() {
           background:#1e90ff;
           color:white !important;
           border-radius:6px
-        }
-
-        /* 菜单提示 */
-        .menu-hint {
-          padding: 8px 16px;
-          font-size: 12px;
-          color: #1e90ff !important;
-          text-align: center;
-          background: rgba(30, 144, 255, 0.1);
-          margin: 0 8px 4px 8px;
-          border-radius: 6px;
-          font-weight: bold;
         }
 
         /* 导航按钮行样式 */
@@ -815,7 +756,7 @@ export default function MusicPlayer() {
           transform:translateX(-50%);
           border-left:8px solid transparent;
           border-right:8px solid transparent;
-          border-bottom:8px solid rgba(255,255,255,0.12)
+          border-bottom:8px solid #ff8c00; /* 橙色箭头 */
         }
 
         /* 响应式设计 */
@@ -858,11 +799,6 @@ export default function MusicPlayer() {
             padding: 6px 3px !important;
             margin: 0 1px !important;
             font-size: 14px;
-          }
-
-          .menu-hint {
-            font-size: 11px;
-            padding: 6px 12px;
           }
         }
       `}</style>
